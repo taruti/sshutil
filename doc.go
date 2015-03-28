@@ -1,3 +1,2 @@
-// sshutil contains helpers for ssh
-
+// Package sshutil contains helpers for ssh.
 package sshutil
