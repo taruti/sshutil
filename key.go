@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
@@ -23,6 +24,8 @@ const (
 	Create = 1 << iota
 	// Save created keys to disk
 	Save
+	// RSA2048 uses RSA keys with 2048 bits
+	RSA2048
 )
 
 // Load a private key with the given parameters.
@@ -39,7 +42,12 @@ func (kl KeyLoader) Load() (ssh.Signer, error) {
 			}
 			return nil, e
 		}
-		bs, e = createKeyPEM()
+		switch {
+		case kl.Flags&RSA2048 != 0:
+			bs, e = createRSAPEM(2048)
+		default:
+			bs, e = createKeyPEM()
+		}
 		if e != nil {
 			return nil, e
 		}
@@ -61,4 +69,14 @@ func createKeyPEM() ([]byte, error) {
 		return nil, e
 	}
 	return pem.EncodeToMemory(&pem.Block{Type: "EC PRIVATE KEY", Bytes: b}), nil
+}
+
+func createRSAPEM(nbits int) ([]byte, error) {
+	k, e := rsa.GenerateKey(rand.Reader, nbits)
+
+	if e != nil {
+		return nil, e
+	}
+	b := x509.MarshalPKCS1PrivateKey(k)
+	return pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: b}), nil
 }
